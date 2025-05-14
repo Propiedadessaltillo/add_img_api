@@ -1,5 +1,4 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import sharp from "sharp";
 
 import { config } from "dotenv";
 config();

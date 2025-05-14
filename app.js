@@ -2,7 +2,7 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 
-import router from "./routes/events.js";
+import router from "./routes/images.js";
 
 const app = express();
 // First commit for porpiedades saltillo

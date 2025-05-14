@@ -5,7 +5,7 @@ import { config } from "dotenv";
 config();
 
 const client = new S3Client({
-  region: "us-east-1",
+  region: "us-east-2",
   credentials: {
     accessKeyId: process.env.ACCES_KEY_ID,
     secretAccessKey: process.env.SECRET_ACCESS_KEY,
@@ -23,25 +23,42 @@ const validateFile = (imgName) => {
   );
 };
 
+function normalizarNombreArchivo(originalName) {
+  const extension = originalName.split(".").pop() || "jpg";
+
+  const baseName = originalName
+    .replace(/\.[^/.]+$/, "") // quitar extensión
+    .toLowerCase()
+    .normalize("NFD") // quitar acentos
+    .replace(/[\u0300-\u036f]/g, "") // quitar acentos (parte 2)
+    .replace(/[^a-z0-9]+/g, "-") // reemplazar cualquier cosa rara por guiones
+    .replace(/(^-|-$)/g, ""); // quitar guiones al inicio/final
+
+  return `${baseName}.${extension}`;
+}
+
 export async function uploadImageToS3Bucket(bufferFile, imgName) {
   try {
     if (validateFile(imgName)) {
       throw new Error("Solo puedes subir imágenes en formato JPG o PNG");
     }
+    const nombreImgNormalized = normalizarNombreArchivo(imgName);
+    const key = `propiedadessaltillo/${nombreImgNormalized}`;
 
     const input = {
-      ACL: "public-read",
       Body: bufferFile,
-      Bucket: "eventosfotos",
-      Key: `eventosplanners/${imgName}`,
+      Bucket: "propiedadessaltillo",
+      Key: key,
       ContentType: "image/jpeg", // Especifica el tipo de contenido aquí
     };
 
     const command = new PutObjectCommand(input);
     const awsResponse = await client.send(command);
+    const url = `https://propiedadessaltillo.s3.us-east-2.amazonaws.com/${key}`;
+
     const response = {
       message: awsResponse.$metadata,
-      imgLinkForDb: `https://eventosfotos.s3.amazonaws.com/eventosplanners/${imgName}`,
+      url,
     };
     return response;
   } catch (error) {
@@ -59,7 +76,7 @@ export async function uploadBatchImagesToS3(fileList) {
           file.buffer,
           file.originalname
         );
-        return imagenSubida.imgLinkForDb; // Devuelve solo el link para el array final
+        return imagenSubida.url; // Devuelve solo el link para el array final
       });
 
       const batchResults = await Promise.all(uploadPromises);

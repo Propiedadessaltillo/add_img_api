@@ -4,7 +4,7 @@ import { config } from "dotenv";
 config();
 
 import app from "./app.js";
-
+// commit x2
 const port = process.env.PORT;
 
 app.listen(port, () => {
